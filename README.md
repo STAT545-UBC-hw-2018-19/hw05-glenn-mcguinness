@@ -1,9 +1,9 @@
-# Homework 05: Factor and f
+# Homework 05: Factor and figure management
 
 This repository contains my submission for homework 5 in STAT 545A. The goal of this assignment is described as follows:
 
 > Goals:
-
+> 
 > - Reorder a factor in a principled way based on the data and demonstrate the effect in arranged data and in figures.
 > - Write some data to file and load it back into R.
 > - Improve a figure (or make one from scratch), using new knowledge, e.g., control the color scheme, use factor levels, smoother mechanics.
