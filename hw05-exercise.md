@@ -5,6 +5,9 @@ Glenn McGuinness
 -   [Introduction](#introduction)
 -   [Part 1: Factor management](#part-1-factor-management)
 -   [Part 2: File I/O](#part-2-file-io)
+-   [Part 3: Visualization Design](#part-3-visualization-design)
+-   [Part 4: Writing Figures to File](#part-4-writing-figures-to-file)
+-   [But I want to do more](#but-i-want-to-do-more)
 
 Introduction
 ------------
@@ -26,6 +29,8 @@ For this assignment, I will be using the gapminder.
 ``` r
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(gapminder))
+suppressPackageStartupMessages(library(scales))
+suppressPackageStartupMessages(library(plotly))
 ```
 
 Part 1: Factor management
@@ -160,6 +165,68 @@ gapminder %>%
 
 From this, we can see it is possible to combine a principled summary ordering with an arbitrary reordering.
 
+We also want to see how arrange works and how it interact with a factor reordering.
+
+``` r
+# Arrange changes the order of the rows based on a columns
+# In this case, descending order based on continent
+gapminder %>%
+    group_by(continent) %>%
+    summarise(meanLifeExp = mean(lifeExp)) %>%
+    arrange(desc(continent)) %>%
+    knitr::kable()
+```
+
+| continent |  meanLifeExp|
+|:----------|------------:|
+| Oceania   |     74.32621|
+| Europe    |     71.90369|
+| Asia      |     60.06490|
+| Americas  |     64.65874|
+| Africa    |     48.86533|
+
+``` r
+# However,this does not change the factor itself
+gapminder %>%
+    group_by(continent) %>%
+    summarise(meanLifeExp = mean(lifeExp)) %>%
+    arrange(desc(continent)) %>%
+    pull(continent) %>%
+    levels()
+```
+
+    ## [1] "Africa"   "Americas" "Asia"     "Europe"   "Oceania"
+
+``` r
+# This means that it does not affect the order in figures
+gapminder %>%
+    group_by(continent, year) %>%
+    summarise(meanLifeExp = mean(lifeExp)) %>%
+    arrange(desc(continent)) %>%
+    ggplot(aes(continent, y = meanLifeExp, colour = continent)) +
+    geom_boxplot() +
+    theme_bw()
+```
+
+![](hw05-exercise_files/figure-markdown_github/unnamed-chunk-2-1.png)
+
+``` r
+# We have already seen the effects of a factor reordering on a figure
+# Therefore, we will see how a factor re-ording and a arrange interact to form a plot
+# To do this, I will put several countries so I have two factors to work with
+gapminder %>%
+    filter(country %in% c("Canada", "Mexico", "France")) %>%
+    mutate(country = fct_reorder(country, lifeExp)) %>%
+    arrange(desc(lifeExp)) %>%
+    ggplot(aes(x = year, y = lifeExp, colour = country)) + 
+    geom_line() +
+    theme_bw()
+```
+
+![](hw05-exercise_files/figure-markdown_github/unnamed-chunk-2-2.png)
+
+Arrange acts on the row order, but not any factor objects, while a factor reorder works on the factor object. One result of this is that arrange does not affect the resutls in a plot, but the factor reorder does. Further, an arrange will not change the effect of a factor reorder. This is because the factor level data is not affected by the order of the individual elements of the factor.
+
 Part 2: File I/O
 ----------------
 
@@ -206,7 +273,7 @@ gapShuffle %>%
     levels()
 ```
 
-    ## [1] "Europe"   "Asia"     "Africa"   "Oceania"  "Americas"
+    ## [1] "Africa"   "Asia"     "Oceania"  "Europe"   "Americas"
 
 ``` r
 # See that the levels are not in the same order
@@ -217,10 +284,10 @@ Lets look at the read/write csv functions. For this I will get by getting the me
 ``` r
 # Write to csv
 gapShuffle %>%
-    write_csv("./gapShuffle.csv", append = FALSE, col_names = TRUE)
+    write_csv("./doc/gapShuffle.csv", append = FALSE, col_names = TRUE)
 
 # Read from csv
-gapShuffleCsv = read_csv("./gapShuffle.csv")
+gapShuffleCsv = read_csv("./doc/gapShuffle.csv")
 ```
 
     ## Parsed with column specification:
@@ -268,10 +335,10 @@ Now, lets see what the same thing is done using an rds file. An rds file contain
 ``` r
 # Write to rds
 gapShuffle %>%
-    write_rds("./gapShuffle.rds")
+    write_rds("./doc/gapShuffle.rds")
 
 # Read from rds
-gapShuffleRds = read_rds("./gapShuffle.rds")
+gapShuffleRds = read_rds("./doc/gapShuffle.rds")
 
 # Is the continent column a factor?
 is.factor(gapShuffleRds$continent)
@@ -300,7 +367,7 @@ gapShuffleRds %>%
     levels()
 ```
 
-    ## [1] "Europe"   "Asia"     "Africa"   "Oceania"  "Americas"
+    ## [1] "Africa"   "Asia"     "Oceania"  "Europe"   "Americas"
 
 Notice that the continent column is still a factor and maintains the same order as before. This is because the metadata is stored in an dput file. As with the csv, the row order is maintained.
 
@@ -311,10 +378,10 @@ Finally, lets look at dput/dget. This writes an R object to a file in ASCII. Thi
 ``` r
 # Write with dput
 gapShuffle %>%
-    dput("./gapShuffle.dput")
+    dput("./doc/gapShuffle.dput")
 
 # Read from dput
-gapShuffleDput = dget("./gapShuffle.dput")
+gapShuffleDput = dget("./doc/gapShuffle.dput")
 
 # Is the continent column a factor?
 is.factor(gapShuffleDput$continent)
@@ -343,7 +410,7 @@ gapShuffleDput %>%
     levels()
 ```
 
-    ## [1] "Europe"   "Asia"     "Africa"   "Oceania"  "Americas"
+    ## [1] "Africa"   "Asia"     "Oceania"  "Europe"   "Americas"
 
 ``` r
 # If we don't specify the object type, we can see the result is the same code you could enter in an R console
@@ -351,8 +418,8 @@ gapShuffle %>%
     dput()
 ```
 
-    ## structure(list(continent = structure(c(3L, 5L, 2L, 1L, 4L), .Label = c("Europe", 
-    ## "Asia", "Africa", "Oceania", "Americas"), class = "factor"), 
+    ## structure(list(continent = structure(c(1L, 5L, 2L, 4L, 3L), .Label = c("Africa", 
+    ## "Asia", "Oceania", "Europe", "Americas"), class = "factor"), 
     ##     meanLifeExp = c(48.8653301282051, 64.6587366666667, 60.0649032323232, 
     ##     71.9036861111111, 74.3262083333333)), .Names = c("continent", 
     ## "meanLifeExp"), class = c("tbl_df", "tbl", "data.frame"), row.names = c(NA, 
@@ -361,3 +428,163 @@ gapShuffle %>%
 This function also maintains the factor order and the row order, as it stores the object meta data. The output of dput is the same code you could use to enter the object into an R console. This can be useful in certain cases.
 
 However, this storage method is very inefficient, so will take up much more storage than a csv to store the same data.
+
+Part 3: Visualization Design
+----------------------------
+
+> Remake at least one figure or create a new one, in light of something you learned in the recent class meetings about visualization design and color. Maybe juxtapose your first attempt and what you obtained after some time spent working on it. Reflect on the differences. If using Gapminder, you can use the country or continent color scheme that ships with Gapminder. Consult the dimensions listed in All the Graph Things.
+>
+> Then, make a new graph by converting this visual (or another, if you’d like) to a plotly graph. What are some things that plotly makes possible, that are not possible with a regular ggplot2 graph?
+
+For this section of the assignement, I want to use the `gapminder` data set to recreate a plot of `lifeExp` by `year`, faceted by `continent`. from homework 3 with the new theme information. The focus of this section is on visual design, so the bulk of this section will focus on the logic for the different visual design choices.
+
+This is the basic plot from hw03 without any additional formatting.
+
+``` r
+gapminder %>%
+  group_by(year) %>%
+  mutate(worldMedian = median(lifeExp), 
+         lessThanMedian = lifeExp < worldMedian) %>%
+  ggplot(aes(year)) +
+  geom_point(aes(y = lifeExp, colour = lessThanMedian)) +
+  geom_line(aes(y = worldMedian)) +
+  facet_wrap(~continent)
+```
+
+![](hw05-exercise_files/figure-markdown_github/basePlot-1.png)
+
+My goal for this section is to take away the extraneous design details, like the background colour, and to focus the design on the plot's purpose. The purpose of thisto show the amount of countries in each continent with a life expectancy greater than the global median. Therefore, I think the colour palette should be discrete, to make it easy to distinguish the two groups. I am using the `RColorBrewer` palette `Accent`, as I believe it gives the clearest distinction between the colours. However, I am partially red-green colour blind, so this sometimes leads me to make different choices. I did not choos viridis, as I am not completely colour blind, so I do not require a colour blind friendly palette.
+
+I have added custom titles to the plot, using the theme to control the size, justification, and face.
+
+This plot uses `theme_classic()` as it's base theme. I chose this theme as it removes most of the extraneous elements, like background colouring, allowing me to select only the necessary elements. This limits plot elements distracting from the plot information. Apart from the titles, the only thing that I added was a panel outline to make the facets stand out. I believe any extra plot elements would be extraneous.
+
+``` r
+gapLifeExpByYear = gapminder %>%
+  group_by(year) %>%
+  mutate(worldMedian = median(lifeExp), 
+         lessThanMedian = lifeExp < worldMedian) %>%
+  ggplot(aes(year)) +
+  geom_point(aes(y = lifeExp, colour = lessThanMedian), alpha = 0.5) +
+  scale_colour_brewer(
+    palette = "Accent",
+    name = "Global Median",
+    labels = c("Less Than", "Greater Than")
+  ) + 
+  geom_line(aes(y = worldMedian)) +
+  ggtitle("Life Expectancy by Year Compared to the Global Median") +
+  labs(x = "Year", y = "Life Expectancy (y)") +
+  facet_wrap(~continent) +
+  theme_classic() + 
+  theme(axis.title =  element_text(size = 14),
+    plot.title = element_text(
+      size = 18, 
+      hjust = 0.8, 
+      face = "bold"),
+    legend.title = element_text(size = 12),
+    panel.background = element_rect(
+      colour = "black",
+      size = 0.25
+    )
+  )
+gapLifeExpByYear
+```
+
+![](hw05-exercise_files/figure-markdown_github/plotWithAddedFormat-1.png)
+
+I believe this plot more clearly communicates the number of countries above and below the world median life expectancy. By choosing a high contrast colour palette and removing unneeded plot elements, it provides an easy and visually appealing presentation of information.
+
+Next, I will create an equivalent plotly plot. Plotly does not have good support for facetting on a factor like ggplot, so, to achieve a similar effect, I will need to use a loop to achieve the same effect
+
+This will not be displayed in this document, as recommended by Professor Coia in an [issue](https://github.com/STAT545-UBC/Discussion-Internal/issues/46#issuecomment-431455131). However, I had already made this plot when this was announced, so I put a lot of work into it. If you would like to see this plot, you can change the document to html and, for the following code chunk, set `eval = TRUE`, and knit the document on your local computer.
+
+``` r
+nContinent = length(unique(gapminder$continent))
+plotlyList = vector("list", nContinent)
+
+for(i in 1:nContinent)
+{
+  plotlyList[[i]] = gapminder %>%
+    group_by(year) %>%
+    mutate(worldMedian = median(lifeExp), 
+           lessThanMedian = lifeExp < worldMedian) %>%
+    ungroup() %>%
+    filter(continent == levels(gapminder$continent)[i]) %>%
+    plot_ly(x = ~year) %>%
+    add_markers(
+      y = ~lifeExp,
+      color = ~lessThanMedian,
+      colors = "Accent",
+      opacity = 0.5) %>%
+    add_lines(
+      y = ~worldMedian,
+      line = list(color = '#07A4B5')) %>%
+    layout(title = 'Life Expectancy By Year Compared to the Global Median',
+         xaxis = list(title = ""),
+         yaxis = list(side = 'left', title = 'Life Expectancy (years)', showgrid = FALSE, zeroline = FALSE),
+         showlegend = FALSE)
+}
+
+subplot(plotlyList, shareX = TRUE, nrows = 2) %>% 
+  layout(annotations = list(
+  list(x = 0 , y = 0.5, text = "Africa", showarrow = F, xref='paper', yref='paper'),
+  list(x = 0.38 , y = 0.5, text = "America", showarrow = F, xref='paper', yref='paper'),
+  list(x = .7 , y = 0.48, text = "Asia", showarrow = F, xref='paper', yref='paper'),
+  list(x = 0 , y = -0.1, text = "Europe", showarrow = F, xref='paper', yref='paper'),
+  list(x = 0.38 , y = -0.1, text = "Oceania", showarrow = F, xref='paper', yref='paper'))
+)
+```
+
+This is a nearly equivalent plot made using plotly. Plotting based on a factor requires much more work than in `ggplot`, but it has a nice effect. Plotly will also automatically add each subplot's elements to the legend. This causes problems when they are plots split by factor, like the above. However, the colour scheme is very clearly divided between above and below the median, so I decided it could be removed. Finally, the continent labels had to be added manually and had limitted formatting options.
+
+The biggest features that I found plotly had that ggplot did not was interactivity. User can select and zoom with plot, see the coordinates of a point, and, through this, get a feel for the data in a way that is not possible with ggplot. It also automatically combines the legends of multiple subplots, which could be very useful in a different circumstance.
+
+Part 4: Writing Figures to File
+-------------------------------
+
+> Use ggsave() to explicitly save a plot to file. Then use !\[Alt text\](/path/to/img.png) to load and embed it in your report. You can play around with various options, such as:
+>
+> Arguments of ggsave(), such as width, height, resolution or text scaling. Various graphics devices, e.g. a vector vs. raster format. Explicit provision of the plot object p via ggsave(..., plot = p). Show a situation in which this actually matters.
+
+In this section, I will explore how to save a ggplot to file using `ggsave()`. I will use the plot from the previous section as an example plot. First, I will try saving the plot with several different arugments and then examine the result.
+
+``` r
+ggsave("./doc/testPlot1.png", units = "cm", width = 30, height = 15)
+ggsave("./doc/testPlot2.bmp", device = "bmp", units = "cm", width = 30, height = 15, scale = 0.5)
+ggsave("./doc/testPlot3.jpeg", device = "jpeg",units = "cm", width = 35, height = 20)
+```
+
+The three different plots that were saved for this section with different parameters. They were each saved with different parameters.
+
+The first plot was saved in a raster image format, png.
+
+![](./doc/testPlot1.png)
+
+The second image was saved as a pdf image, with a different scale, but the same size.
+
+![](./doc/testPlot2.bmp)
+
+Finally, the third image was saved as a jpeg with different height and width settings.
+
+![](./doc/testPlot3.jpeg)
+
+The first image is quite nice. It is a raster image, which means it will not scale as well as a vector image, as it is defined in terms of pixels rather than vectors. The second image looks blown up. However, this is because it was scaled down using the scale parameter to half of the size given in the width and height arguments. As the text was a pre-defined size, this caused the text to look much bigger compared to the plots, as it does in this image. Finally, the jpeg plot has been saved with different width and height parameters. However, this image was resized to fit the page, so this is not visible.
+
+But I want to do more
+---------------------
+
+For this section, I will recode a small set of countries to one of their most famous cheeses.
+
+``` r
+gapminder %>%
+  filter(country %in% c("United States", "France", "Switzerland", "Italy", "Ireland")) %>%
+  droplevels() %>%
+  mutate(country = fct_recode(country, kraftSingles = "United States", roquefort = "France", swiss = "Switzerland", parmesan = "Italy", irishCheddar = "Ireland")) %>%
+  pull(country) %>%
+  levels()
+```
+
+    ## [1] "roquefort"    "irishCheddar" "parmesan"     "swiss"       
+    ## [5] "kraftSingles"
+
+What this did is filter out a small subset of countries, drop unused levels, map the countries to their famous cheeses, and then pull the remapped countries to display the results!

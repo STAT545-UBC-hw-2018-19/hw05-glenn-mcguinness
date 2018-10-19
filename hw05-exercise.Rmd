@@ -2,7 +2,7 @@
 title: "STAT 545A - Homework 5: Factors and figure management"
 author: Glenn McGuinness
 output: 
-    html_document:
+    github_document:
         toc: yes
 ---
 
@@ -200,10 +200,10 @@ Lets look at the read/write csv functions. For this I will get by getting the me
 ```{r csvExample = 'asis'}
 # Write to csv
 gapShuffle %>%
-    write_csv("./gapShuffle.csv", append = FALSE, col_names = TRUE)
+    write_csv("./doc/gapShuffle.csv", append = FALSE, col_names = TRUE)
 
 # Read from csv
-gapShuffleCsv = read_csv("./gapShuffle.csv")
+gapShuffleCsv = read_csv("./doc/gapShuffle.csv")
 # Look at the data frame
 gapShuffleCsv %>%
     knitr::kable()
@@ -218,10 +218,10 @@ Now, lets see what the same thing is done using an rds file. An rds file contain
 ```{r rdsExample = 'asis'}
 # Write to rds
 gapShuffle %>%
-    write_rds("./gapShuffle.rds")
+    write_rds("./doc/gapShuffle.rds")
 
 # Read from rds
-gapShuffleRds = read_rds("./gapShuffle.rds")
+gapShuffleRds = read_rds("./doc/gapShuffle.rds")
 
 # Is the continent column a factor?
 is.factor(gapShuffleRds$continent)
@@ -245,10 +245,10 @@ Finally, lets look at dput/dget. This writes an R object to a file in ASCII. Thi
 ```{r dputExample = 'asis'}
 # Write with dput
 gapShuffle %>%
-    dput("./gapShuffle.dput")
+    dput("./doc/gapShuffle.dput")
 
 # Read from dput
-gapShuffleDput = dget("./gapShuffle.dput")
+gapShuffleDput = dget("./doc/gapShuffle.dput")
 
 # Is the continent column a factor?
 is.factor(gapShuffleDput$continent)
@@ -333,7 +333,9 @@ I believe this plot more clearly communicates the number of countries above and 
 
 Next, I will create an equivalent plotly plot. Plotly does not have good support for facetting on a factor like ggplot, so, to achieve a similar effect, I will need to use a loop to achieve the same effect
 
-```{r plotlyPlot, fig.width = 10, fig.height = 5}
+This will not be displayed in this document, as recommended by Professor Coia in an [issue](https://github.com/STAT545-UBC/Discussion-Internal/issues/46#issuecomment-431455131). However, I had already made this plot when this was announced, so I put a lot of work into it. If you would like to see this plot, you can change the document to html and, for the following code chunk, set `eval = TRUE`, and knit the document on your local computer.
+
+```{r plotlyPlot, eval = FALSE, fig.width = 10, fig.height = 5}
 nContinent = length(unique(gapminder$continent))
 plotlyList = vector("list", nContinent)
 
@@ -384,24 +386,24 @@ The biggest features that I found plotly had that ggplot did not was interactivi
 In this section, I will explore how to save a ggplot to file using `ggsave()`. I will use the plot from the previous section as an example plot. First, I will try saving the plot with several different arugments and then examine the result.
 
 ```{r ggsaveArg}
-ggsave("testPlot1.png", units = "cm", width = 30, height = 15)
-ggsave("testPlot2.bmp", device = "bmp", units = "cm", width = 30, height = 15, scale = 0.5)
-ggsave("testPlot3.jpeg", device = "jpeg",units = "cm", width = 35, height = 20)
+ggsave("./doc/testPlot1.png", units = "cm", width = 30, height = 15)
+ggsave("./doc/testPlot2.bmp", device = "bmp", units = "cm", width = 30, height = 15, scale = 0.5)
+ggsave("./doc/testPlot3.jpeg", device = "jpeg",units = "cm", width = 35, height = 20)
 ```
 
 The three different plots that were saved for this section with different parameters. They were each saved with different parameters. 
 
 The first plot was saved in a raster image format, png.
 
-![](testPlot1.png)
+![](./doc/testPlot1.png)
 
 The second image was saved as a pdf image, with a different scale, but the same size.
 
-![](testPlot2.bmp)
+![](./doc/testPlot2.bmp)
 
 Finally, the third image was saved as a jpeg with different height and width settings.
 
-![](testPlot3.jpeg)
+![](./doc/testPlot3.jpeg)
 
 The first image is quite nice. It is a raster image, which means it will not scale as well as a vector image, as it is defined in terms of pixels rather than vectors. The second image looks blown up. However, this is because it was scaled down using the scale parameter to half of the size given in the width and height arguments. As the text was a pre-defined size, this caused the text to look much bigger compared to the plots, as it does in this image. Finally, the jpeg plot has been saved with different width and height parameters. However, this image was resized to fit the page, so this is not visible.
 
